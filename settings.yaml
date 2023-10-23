@@ -21,9 +21,9 @@ nodes:
     cpu: 2
     memory: 4096
   workers:
-    count: 1
-    cpu: 1
-    memory: 2048
+    count: 2
+    cpu: 2
+    memory: 4096
 # Mount additional shared folders from the host into each virtual machine.
 # Note that the project directory is automatically mounted at /vagrant.
 # shared_folders:
@@ -32,7 +32,9 @@ nodes:
 software:
   box: bento/ubuntu-22.04
   calico: 3.26.0
-  # To skip the dashboard installation, set its version to an empty value or comment it out:
+  # To skip the dashboard, ingress or metallb installation, set its version to an empty value or comment it out:
   dashboard: 2.7.0
+  ingress: 1.6.4
+  metallb: 0.13.7
   kubernetes: 1.27.1-00
   os: xUbuntu_22.04
