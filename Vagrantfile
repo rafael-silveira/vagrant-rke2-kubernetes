@@ -85,7 +85,7 @@ Vagrant.configure("2") do |config|
         path: "scripts/common.sh"
       node.vm.provision "shell", path: "scripts/node.sh"
 
-      # Only install the dashboard, metallb and ingress after provisioning the last worker (and when enabled).
+      # Only install the dashboard, metallb, ingress and argocd after provisioning the last worker (and when enabled).
       if i == NUM_WORKER_NODES
         if settings["software"]["dashboard"] and settings["software"]["dashboard"] != ""
           node.vm.provision "shell", path: "scripts/dashboard.sh"
@@ -95,6 +95,9 @@ Vagrant.configure("2") do |config|
         end
         if settings["software"]["ingress"] and settings["software"]["ingress"] != ""
           node.vm.provision "shell", path: "scripts/ingress.sh"
+        end        
+        if settings["software"]["argocd"] and settings["software"]["argocd"] != ""
+          node.vm.provision "shell", path: "scripts/argocd.sh"
         end        
       end
     end

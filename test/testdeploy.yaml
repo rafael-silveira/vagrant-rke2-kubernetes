@@ -1,0 +1,78 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: frontend-app1
+  labels:
+    app: frontend
+spec:
+  containers:
+    - name: frontend-app
+      image: rlsoft/blazorapp1:latest
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: frontend-app2
+  labels:
+    app: frontend
+spec:
+  containers:
+    - name: frontend-app
+      image: rlsoft/blazorapp1:latest
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: frontend-app3
+  labels:
+    app: frontend
+spec:
+  containers:
+    - name: frontend-app
+      image: rlsoft/blazorapp1:latest
+---
+kind: Pod
+apiVersion: v1
+metadata: 
+  name: network-tools
+  labels: 
+    app: network-tools
+spec:
+  containers:
+    - name: network-tools
+      image: wbitt/network-multitool
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: frontend-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: frontend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-service
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"  
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: blazor-10-0-0-200.nip.io
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend-service
+              port:
+                number: 80

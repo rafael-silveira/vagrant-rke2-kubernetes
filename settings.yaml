@@ -36,5 +36,6 @@ software:
   dashboard: 2.7.0
   ingress: 1.6.4
   metallb: 0.13.7
+  argocd: stable
   kubernetes: 1.27.1-00
   os: xUbuntu_22.04
