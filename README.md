@@ -1,3 +1,4 @@
+Forked from: https://github.com/techiescamp/vagrant-kubeadm-kubernetes
 
 # Vagrantfile and Scripts to Automate Kubernetes Setup using Kubeadm [Practice Environment for CKA/CKAD and CKS Exams]
 
@@ -6,14 +7,6 @@
 Current k8s version for CKA, CKAD, and CKS exam: 1.27
 
 Refer to this link for documentation: https://devopscube.com/kubernetes-cluster-vagrant/
-
-## 🚀 CKA, CKAD, CKS, or KCNA Coupon Codes
-
-🚀  CKA, CKAD, CKS, or KCNA exam aspirants can **save $80** today using code **DCUBE20** at https://kube.promo/devops. It is a limited-time offer from the Linux Foundation.
-
-For the best savings, opt for the CKA + CKS bundle (**$210 Savings)**. Use code **DCUBE20** at https://kube.promo/bundle
->Note: You have one year of validity to appear for the certification exam after registration
-
 
 ## Prerequisites
 
@@ -85,6 +78,16 @@ Open the site in your browser:
 ```shell
 http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/overview?namespace=kubernetes-dashboard
 ```
+
+## Kubernetes MetalLB
+
+MetalLB will be installed. To avoid this install, comment the metallb version in settings file.
+It'll use the IP range from 10.0.0.200 to 10.0.0.250.
+
+## Kubernetes Ingress NGINX
+
+Ingress NGINX will be installed. To avoid this install, comment the ingress version in settings file.
+If installed with MetalLB, Ingress Controller will be at IP 10.0.0.200.
 
 ## To shutdown the cluster,
 
