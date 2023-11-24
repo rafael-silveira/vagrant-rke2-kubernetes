@@ -6,48 +6,25 @@ set -euxo pipefail
 
 NODENAME=$(hostname -s)
 
-sudo kubeadm config images pull
-
-echo "Preflight Check Passed: Downloaded All Required Images"
-
-sudo kubeadm init --apiserver-advertise-address=$CONTROL_IP --apiserver-cert-extra-sans=$CONTROL_IP --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR --node-name "$NODENAME" --ignore-preflight-errors Swap
-
-mkdir -p "$HOME"/.kube
-sudo cp -i /etc/kubernetes/admin.conf "$HOME"/.kube/config
-sudo chown "$(id -u)":"$(id -g)" "$HOME"/.kube/config
-
-# Save Configs to shared /Vagrant location
-
-# For Vagrant re-runs, check if there is existing configs in the location and delete it for saving new configuration.
-
-config_path="/vagrant/configs"
-
-if [ -d $config_path ]; then
-  rm -f $config_path/*
-else
-  mkdir -p $config_path
-fi
-
-cp -i /etc/kubernetes/admin.conf $config_path/config
-touch $config_path/join.sh
-chmod +x $config_path/join.sh
-
-kubeadm token create --print-join-command > $config_path/join.sh
-
-# Install Calico Network Plugin
-
-curl https://raw.githubusercontent.com/projectcalico/calico/v${CALICO_VERSION}/manifests/calico.yaml -O
-
-kubectl apply -f calico.yaml
-
-sudo -i -u vagrant bash << EOF
-whoami
-mkdir -p /home/vagrant/.kube
-sudo cp -i $config_path/config /home/vagrant/.kube/
-sudo chown 1000:1000 /home/vagrant/.kube/config
+# copia arquivo de configuracao
+sudo mkdir -p /etc/rancher/rke2/
+sudo cat <<EOF >>/etc/rancher/rke2/config.yaml
+node-external-ip: ${CLUSTER_MASTER_IP}
+token: vagrant-rke2
+cni: calico
 EOF
 
-# Install Metrics Server
+# instala rke2
+#curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=v1.25.15+rke2r2 sh -
+curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=${RKE2_VERSION} sh -
+sudo systemctl enable rke2-server.service
+sudo systemctl start rke2-server.service
 
-kubectl apply -f https://raw.githubusercontent.com/techiescamp/kubeadm-scripts/main/manifests/metrics-server.yaml
+#configura 
+mkdir -p /home/vagrant/.kube && sudo cp /etc/rancher/rke2/rke2.yaml /home/vagrant/.kube/config
+sudo chown 1000:1000 /home/vagrant/.kube/config
+sudo cp /var/lib/rancher/rke2/bin/kubectl /usr/bin
+
+#copia config para diretorio externo e troca 127.0.0.1 pelo master node
+sed "s/127.0.0.1/${CLUSTER_MASTER_IP}/" /home/vagrant/.kube/config > /vagrant/configs/config
 

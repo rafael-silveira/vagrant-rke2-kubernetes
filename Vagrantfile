@@ -3,11 +3,11 @@ require "yaml"
 settings = YAML.load_file "settings.yaml"
 
 IP_SECTIONS = settings["network"]["control_ip"].match(/^([0-9.]+\.)([^.]+)$/)
-# First 3 octets including the trailing dot:
 IP_NW = IP_SECTIONS.captures[0]
-# Last octet excluding all dots:
 IP_START = Integer(IP_SECTIONS.captures[1])
 NUM_WORKER_NODES = settings["nodes"]["workers"]["count"]
+
+CLUSTER_MASTER_IP = IP_NW + "#{IP_START}"
 
 Vagrant.configure("2") do |config|
   config.vm.provision "shell", env: { "IP_NW" => IP_NW, "IP_START" => IP_START, "NUM_WORKER_NODES" => NUM_WORKER_NODES }, inline: <<-SHELL
@@ -18,44 +18,35 @@ Vagrant.configure("2") do |config|
       done
   SHELL
 
-  if `uname -m`.strip == "aarch64"
-    config.vm.box = settings["software"]["box"] + "-arm64"
-  else
-    config.vm.box = settings["software"]["box"]
-  end
+  config.vm.box = settings["software"]["box"]
+  config.vm.box_version = settings["software"]["box_version"]
   config.vm.box_check_update = true
 
   config.vm.define "master" do |master|
     master.vm.hostname = "master-node"
     master.vm.network "private_network", ip: settings["network"]["control_ip"]
-    if settings["shared_folders"]
-      settings["shared_folders"].each do |shared_folder|
-        master.vm.synced_folder shared_folder["host_path"], shared_folder["vm_path"]
-      end
-    end
     master.vm.provider "virtualbox" do |vb|
         vb.cpus = settings["nodes"]["control"]["cpu"]
         vb.memory = settings["nodes"]["control"]["memory"]
-        if settings["cluster_name"] and settings["cluster_name"] != ""
-          vb.customize ["modifyvm", :id, "--groups", ("/" + settings["cluster_name"])]
-        end
+        vb.customize ["modifyvm", :id, "--groups", ("/" + settings["cluster_name"])]
+        vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
     end
     master.vm.provision "shell",
       env: {
         "DNS_SERVERS" => settings["network"]["dns_servers"].join(" "),
         "ENVIRONMENT" => settings["environment"],
-        "KUBERNETES_VERSION" => settings["software"]["kubernetes"],
-        "OS" => settings["software"]["os"]
+        "OS" => settings["software"]["os"], 
+        "CLUSTER_MASTER_IP" => CLUSTER_MASTER_IP
       },
       path: "scripts/common.sh"
+
     master.vm.provision "shell",
       env: {
-        "CALICO_VERSION" => settings["software"]["calico"],
-        "CONTROL_IP" => settings["network"]["control_ip"],
-        "POD_CIDR" => settings["network"]["pod_cidr"],
-        "SERVICE_CIDR" => settings["network"]["service_cidr"]
+        "RKE2_VERSION" => settings["software"]["rke2"], 
+        "CLUSTER_MASTER_IP" => CLUSTER_MASTER_IP
       },
       path: "scripts/master.sh"
+
   end
 
   (1..NUM_WORKER_NODES).each do |i|
@@ -63,44 +54,34 @@ Vagrant.configure("2") do |config|
     config.vm.define "node0#{i}" do |node|
       node.vm.hostname = "worker-node0#{i}"
       node.vm.network "private_network", ip: IP_NW + "#{IP_START + i}"
-      if settings["shared_folders"]
-        settings["shared_folders"].each do |shared_folder|
-          node.vm.synced_folder shared_folder["host_path"], shared_folder["vm_path"]
-        end
-      end
       node.vm.provider "virtualbox" do |vb|
           vb.cpus = settings["nodes"]["workers"]["cpu"]
           vb.memory = settings["nodes"]["workers"]["memory"]
-          if settings["cluster_name"] and settings["cluster_name"] != ""
-            vb.customize ["modifyvm", :id, "--groups", ("/" + settings["cluster_name"])]
-          end
-      end
+          vb.customize ["modifyvm", :id, "--groups", ("/" + settings["cluster_name"])]
+          vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
+        end
       node.vm.provision "shell",
         env: {
           "DNS_SERVERS" => settings["network"]["dns_servers"].join(" "),
           "ENVIRONMENT" => settings["environment"],
-          "KUBERNETES_VERSION" => settings["software"]["kubernetes"],
+          "RKE2_VERSION" => settings["software"]["rke2"], 
+          "CLUSTER_MASTER_IP" => CLUSTER_MASTER_IP, 
+          "CLUSTER_NODE_IP" => IP_NW + "#{IP_START + i}",
           "OS" => settings["software"]["os"]
         },
         path: "scripts/common.sh"
-      node.vm.provision "shell", path: "scripts/node.sh"
+      node.vm.provision "shell",
+        env: {
+          "DNS_SERVERS" => settings["network"]["dns_servers"].join(" "),
+          "ENVIRONMENT" => settings["environment"],
+          "RKE2_VERSION" => settings["software"]["rke2"], 
+          "CLUSTER_MASTER_IP" => CLUSTER_MASTER_IP, 
+          "CLUSTER_NODE_IP" => IP_NW + "#{IP_START + i}", 
+          "OS" => settings["software"]["os"]
+        },
+        path: "scripts/node.sh"
 
-      # Only install the dashboard, metallb, ingress and argocd after provisioning the last worker (and when enabled).
-      if i == NUM_WORKER_NODES
-        if settings["software"]["dashboard"] and settings["software"]["dashboard"] != ""
-          node.vm.provision "shell", path: "scripts/dashboard.sh"
-        end
-        if settings["software"]["metallb"] and settings["software"]["metallb"] != ""
-          node.vm.provision "shell", path: "scripts/metallb.sh"
-        end
-        if settings["software"]["ingress"] and settings["software"]["ingress"] != ""
-          node.vm.provision "shell", path: "scripts/ingress.sh"
-        end        
-        if settings["software"]["argocd"] and settings["software"]["argocd"] != ""
-          node.vm.provision "shell", path: "scripts/argocd.sh"
-        end        
-      end
     end
-
   end
+
 end 
