@@ -26,5 +26,6 @@ sudo chown 1000:1000 /home/vagrant/.kube/config
 sudo cp /var/lib/rancher/rke2/bin/kubectl /usr/bin
 
 #copia config para diretorio externo e troca 127.0.0.1 pelo master node
+mkdir -p /vagrant/configs/config
 sed "s/127.0.0.1/${CLUSTER_MASTER_IP}/" /home/vagrant/.kube/config > /vagrant/configs/config
 
