@@ -11,7 +11,6 @@ sudo mkdir -p /etc/rancher/rke2/
 sudo cat <<EOF >>/etc/rancher/rke2/config.yaml
 node-external-ip: ${CLUSTER_MASTER_IP}
 token: vagrant-rke2
-cni: calico
 EOF
 
 # instala rke2
@@ -26,6 +25,6 @@ sudo chown 1000:1000 /home/vagrant/.kube/config
 sudo cp /var/lib/rancher/rke2/bin/kubectl /usr/bin
 
 #copia config para diretorio externo e troca 127.0.0.1 pelo master node
-mkdir -p /vagrant/configs/config
+mkdir -p /vagrant/configs
 sed "s/127.0.0.1/${CLUSTER_MASTER_IP}/" /home/vagrant/.kube/config > /vagrant/configs/config
 
