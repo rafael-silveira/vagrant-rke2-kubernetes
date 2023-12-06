@@ -1,51 +1,18 @@
 kind: Pod
 apiVersion: v1
 metadata:
-  name: frontend-app1
+  name: pipedreamfake-pod1
   labels:
-    app: frontend
+    app: pipedreamfake
 spec:
   containers:
-    - name: frontend-app
-      image: rlsoft/blazorapp1:latest
----
-kind: Pod
-apiVersion: v1
-metadata:
-  name: frontend-app2
-  labels:
-    app: frontend
-spec:
-  containers:
-    - name: frontend-app
-      image: rlsoft/blazorapp1:latest
----
-kind: Pod
-apiVersion: v1
-metadata:
-  name: frontend-app3
-  labels:
-    app: frontend
-spec:
-  containers:
-    - name: frontend-app
-      image: rlsoft/blazorapp1:latest
----
-kind: Pod
-apiVersion: v1
-metadata: 
-  name: network-tools
-  labels: 
-    app: network-tools
-spec:
-  containers:
-    - name: network-tools
-      image: wbitt/network-multitool
+    - name: pipedreamfake-pod
+      image: rlsoft/pipedreamfake:0.0.1
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: frontend-service
+  name: pipedreamfake-service
 spec:
   type: ClusterIP
   ports:
@@ -53,12 +20,12 @@ spec:
     protocol: TCP
     targetPort: 80
   selector:
-    app: frontend
+    app: pipedreamfake
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: frontend-service
+  name: pipedreamfake-ingress
   annotations:
     nginx.ingress.kubernetes.io/affinity: "cookie"
     nginx.ingress.kubernetes.io/session-cookie-name: "route"
@@ -66,13 +33,13 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: blazor-10-0-0-11.nip.io
+  - host: pipedreamfake-10-0-0-11.nip.io
     http:
       paths:
         - path: /
           pathType: Prefix
           backend:
             service:
-              name: frontend-service
+              name: pipedreamfake-service
               port:
                 number: 80
