@@ -28,3 +28,5 @@ sudo cp /var/lib/rancher/rke2/bin/kubectl /usr/bin
 mkdir -p /vagrant/configs
 sed "s/127.0.0.1/${CLUSTER_MASTER_IP}/" /home/vagrant/.kube/config > /vagrant/configs/config
 
+#instala o k9s no master
+curl -sS https://webinstall.dev/k9s | bash
